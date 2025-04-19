@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Appointments from './pages/Appointments';
 import Patients from './pages/Patients';
 import Documents from './pages/Documents';
+import DocumentDetail from './pages/Documents/DocumentDetail';
 import Settings from './pages/Settings';
 import MainLayout from './components/layout/MainLayout/MainLayout';
 
@@ -21,6 +22,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/patients" element={<Patients />} />
         <Route path="/documents" element={<Documents />} />
+        <Route path="/documents/:category/:id" element={<DocumentDetail />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
     </Routes>
