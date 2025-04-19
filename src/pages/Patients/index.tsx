@@ -1,5 +1,4 @@
 import React from 'react';
-import MainLayout from '../../components/layout/MainLayout/MainLayout';
 import Title from '../../components/ui/Title/Title';
 import Table from '../../components/ui/Table';
 import Button from '../../components/ui/Button/Button';
@@ -55,7 +54,7 @@ const Patients: React.FC = () => {
   ];
 
   return (
-    <MainLayout>
+    <>
       <div className="flex justify-between items-center mb-6">
         <Title level={1}>Pacientes</Title>
         <Button variant="primary">
@@ -63,7 +62,7 @@ const Patients: React.FC = () => {
         </Button>
       </div>
       <Table<Patient> data={patients} columns={columns} />
-    </MainLayout>
+    </>
   );
 };
 

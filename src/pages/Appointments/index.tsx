@@ -1,5 +1,4 @@
 import React from 'react';
-import MainLayout from '../../components/layout/MainLayout/MainLayout';
 import Title from '../../components/ui/Title/Title';
 import Table from '../../components/ui/Table/Table';
 import Button from '../../components/ui/Button/Button';
@@ -54,21 +53,15 @@ const Appointments: React.FC = () => {
   ];
 
   return (
-    <MainLayout sidebarOpen={false} setSidebarOpen={function (): void {
-      throw new Error('Function not implemented.');
-    } }>
-      {/* Container com padding adequado e rolagem horizontal */}
-      <div className="w-full px-4 md:px-8">
-        <Title level={1} className="text-xl md:text-3xl mb-4">
-          Agendamentos
-        </Title>
+    <>
+      <Title level={1} className="text-xl md:text-3xl mb-4">
+        Agendamentos
+      </Title>
 
-        {/* Contêiner da tabela com rolagem horizontal e ajuste da largura */}
-        <div className="overflow-x-auto bg-white rounded-lg shadow-md w-full">
-          <Table<Appointment> data={appointments} columns={columns} />
-        </div>
+      <div className="overflow-x-auto bg-white rounded-lg shadow-md w-full">
+        <Table<Appointment> data={appointments} columns={columns} />
       </div>
-    </MainLayout>
+    </>
   );
 };
 

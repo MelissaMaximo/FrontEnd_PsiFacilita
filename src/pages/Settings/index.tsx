@@ -1,5 +1,4 @@
 import React from 'react';
-import MainLayout from '../../components/layout/MainLayout/MainLayout';
 import Title from '../../components/ui/Title/Title';
 import Input from '../../components/ui/Form/Input';
 import Label from '../../components/ui/Form/Label';
@@ -24,7 +23,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <MainLayout>
+    <>
       <Title level={1}>Configurações</Title>
       
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mt-6 max-w-2xl">
@@ -66,7 +65,7 @@ const Settings: React.FC = () => {
           </Button>
         </div>
       </form>
-    </MainLayout>
+    </>
   );
 };
 

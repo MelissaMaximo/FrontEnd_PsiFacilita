@@ -1,5 +1,4 @@
 import React from 'react';
-import MainLayout from '../../components/layout/MainLayout/MainLayout';
 import Title from '../../components/ui/Title/Title';
 import Dropdown from '../../components/ui/Dropdown'; 
 
@@ -17,7 +16,7 @@ const Documents: React.FC = () => {
   };
 
   return (
-    <MainLayout>
+    <>
       <Title level={1}>Documentos</Title>
       
       <div className="bg-white p-6 rounded-lg shadow mt-6">
@@ -43,7 +42,7 @@ const Documents: React.FC = () => {
           ))}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 };
 
