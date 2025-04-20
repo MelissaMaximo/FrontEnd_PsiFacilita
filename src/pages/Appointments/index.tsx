@@ -1,9 +1,10 @@
 import React from 'react';
 import Title from '../../components/ui/Title/Title';
-import Table from '../../components/ui/Table/Table';
 import Button from '../../components/ui/Button/Button';
+import Table from '../../components/ui/Table';
 
-interface Appointment extends Record<string, unknown> {
+
+interface Appointment {
   id: string;
   patientName: string;
   time: string;
@@ -21,30 +22,38 @@ const Appointments: React.FC = () => {
     { id: '3', patientName: 'Carlos Oliveira', time: '16:45', date: '2023-05-17' },
   ];
 
-  const columns = [
+  interface TableColumn<T> {
+    header: string;
+    accessor: keyof T;
+    Cell?: React.FC<{ value: T[keyof T] }>;
+  }
+  
+
+  const columns: TableColumn<Appointment>[] = [
     {
       header: 'Nome do Paciente',
-      accessor: 'patientName' as const,
-      Cell: ({ value }: { value: unknown }) => <>{String(value)}</>,
+      accessor: 'patientName',
+      Cell: ({ value }: { value: Appointment['patientName'] }) => <span>{value}</span>,
     },
     {
       header: 'Horário',
-      accessor: 'time' as const,
-      Cell: ({ value }: { value: unknown }) => <>{String(value)}</>,
+      accessor: 'time',
+      Cell: ({ value }: { value: Appointment['time'] }) => <span>{value}</span>,
     },
     {
       header: 'Data',
-      accessor: 'date' as const,
-      Cell: ({ value }: { value: unknown }) => <>{String(value)}</>,
+      accessor: 'date',
+      Cell: ({ value }: { value: Appointment['date'] }) => <span>{value}</span>,
     },
     {
       header: 'Ações',
-      accessor: 'id' as const,
-      Cell: ({ value }: { value: unknown }) => (
+      accessor: 'id',
+      Cell: ({ value }: { value: Appointment['id'] }) => (
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handleView(String(value))}
+          onClick={() => handleView(value)}
+          aria-label={`Ver detalhes do agendamento ${value}`}
         >
           Ver
         </Button>
@@ -53,15 +62,18 @@ const Appointments: React.FC = () => {
   ];
 
   return (
-    <>
-      <Title level={1} className="text-xl md:text-3xl mb-4">
+    <div className="p-4">
+      <Title level={1} className="mb-6">
         Agendamentos
       </Title>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow-md w-full">
-        <Table<Appointment> data={appointments} columns={columns} />
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <Table 
+          data={appointments} 
+          columns={columns}
+        />
       </div>
-    </>
+    </div>
   );
 };
 
