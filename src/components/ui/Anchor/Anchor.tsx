@@ -1,4 +1,3 @@
-// components/ui/Anchor.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -13,6 +12,14 @@ interface AnchorProps {
   style?: React.CSSProperties;
   children: React.ReactNode;
   authRequired?: boolean;
+  /**
+   * Obrigatório quando authRequired=true - define para onde redirecionar se não autenticado
+   */
+  unauthorizedRedirectTo?: string;
+  /**
+   * Callback alternativo para quando o acesso não é autorizado
+   */
+  onUnauthorized?: () => void;
 }
 
 const Anchor: React.FC<AnchorProps> = ({
@@ -25,6 +32,8 @@ const Anchor: React.FC<AnchorProps> = ({
   style = {},
   children,
   authRequired = false,
+  unauthorizedRedirectTo,
+  onUnauthorized,
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -42,7 +51,13 @@ const Anchor: React.FC<AnchorProps> = ({
       event.preventDefault();
       
       if (authRequired && !isAuthenticated()) {
-        navigate('/login');
+        if (onUnauthorized) {
+          onUnauthorized();
+        } else if (unauthorizedRedirectTo) {
+          navigate(unauthorizedRedirectTo);
+        } else {
+          console.error('Anchor com authRequired=true precisa de unauthorizedRedirectTo ou onUnauthorized');
+        }
         return;
       }
       
