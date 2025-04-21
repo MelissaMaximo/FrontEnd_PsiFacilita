@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Title from '../Title';
 import Button from '../Button';
 import Input from '../Form/Input';
@@ -24,6 +24,123 @@ interface WorkScheduleManagerProps {
   onSave?: (schedules: DailySchedule[]) => void;
 }
 
+// Função utilitária para adicionar zeros à esquerda em números (formatação de tempo)
+const padTimeNumber = (num: number): string => {
+  return num.toString().padStart(2, '0');
+};
+
+// Função utilitária para formatar string de tempo (HH:MM)
+const formatTimeString = (hours: number, minutes: number): string => {
+  return `${padTimeNumber(hours)}:${padTimeNumber(minutes)}`;
+};
+
+// Array com os nomes dos dias da semana em português (na ordem do JavaScript: 0=Domingo, 1=Segunda, etc)
+const weekdayNames = [
+  'Segunda-feira', 'Terça-feira', 
+  'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado' ,'Domingo'
+];
+
+// Função para formatar a data mostrando o dia da semana
+const formatDateWithWeekday = (dateString: string): string => {
+  const date = new Date(dateString);
+  const weekday = weekdayNames[date.getDay()]; // getDay() retorna 0-6, onde 0=Domingo
+  return `${weekday}, ${date.toLocaleDateString('pt-BR')}`;
+};
+
+// Função para criar slots de tempo de trabalho padrão (sessões de 45 min + intervalos de 15 min)
+const createWorkTimeSlots = (startHour: number, endHour: number, lunchHour: number): TimeSlot[] => {
+  const slots: TimeSlot[] = [];
+  let slotId = 1;
+  
+  // Função auxiliar para criar slots em um intervalo de horas
+  const createSlotsForRange = (rangeStart: number, rangeEnd: number) => {
+    for (let hour = rangeStart; hour < rangeEnd; hour++) {
+      // Slot de trabalho (45 min)
+      slots.push({
+        id: `slot-${slotId++}`,
+        type: 'work',
+        startTime: formatTimeString(hour, 0),
+        endTime: formatTimeString(hour, 45),
+        isActive: true
+      });
+      
+      // Slot de intervalo (15 min) - exceto após o último horário do período
+      if (hour < rangeEnd - 1) {
+        slots.push({
+          id: `slot-${slotId++}`,
+          type: 'break',
+          startTime: formatTimeString(hour, 45),
+          endTime: formatTimeString(hour + 1, 0),
+          isActive: true
+        });
+      }
+    }
+  };
+  
+  // Slots da manhã (até o horário do almoço)
+  createSlotsForRange(startHour, lunchHour);
+  
+  // Intervalo de almoço
+  slots.push({
+    id: `slot-${slotId++}`,
+    type: 'break',
+    startTime: formatTimeString(lunchHour, 0),
+    endTime: formatTimeString(lunchHour + 1, 0),
+    isActive: true
+  });
+  
+  // Slots da tarde (após o almoço até o fim do expediente)
+  createSlotsForRange(lunchHour + 1, endHour);
+  
+  return slots;
+};
+
+// Função para obter as datas da semana atual (segunda a domingo), com opção de incluir sábado e domingo
+const getCurrentAndNextDays = (includeSaturday = false, includeSunday = false): string[] => {
+  const days: string[] = [];
+
+  // Descobre a data da segunda-feira da semana atual
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dayOfWeek = today.getDay(); // 0 (domingo) a 6 (sábado)
+  // Calcula diferença para segunda-feira (1)
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday);
+
+  // Adiciona segunda a sexta
+  for (let i = 0; i < 5; i++) {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    days.push(day.toISOString().split('T')[0]);
+  }
+
+  // Adiciona sábado se solicitado
+  if (includeSaturday) {
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate() + 5);
+    days.push(saturday.toISOString().split('T')[0]);
+  }
+
+  // Adiciona domingo se solicitado
+  if (includeSunday) {
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    days.push(sunday.toISOString().split('T')[0]);
+  }
+
+  return days;
+};
+
+// Função para criar uma agenda semanal padrão (Segunda a Sexta, 8:00-17:00)
+const createDefaultWeeklySchedule = (): DailySchedule[] => {
+  const weekdayDates = getCurrentAndNextDays();
+  return weekdayDates.map(date => ({
+    date,
+    timeSlots: createWorkTimeSlots(8, 17, 12) // 8:00 às 17:00 com almoço às 12:00
+  }));
+};
+
 const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
   initialSchedules = [],
   onSave
@@ -32,42 +149,110 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [currentSchedule, setCurrentSchedule] = useState<DailySchedule | null>(null);
+  const [includeSaturday, setIncludeSaturday] = useState(false);
+  const [includeSunday, setIncludeSunday] = useState(false);
   
   // Formato da data atual YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-    if (!selectedDate) {
-      setSelectedDate(today);
+  // Inicializa com a agenda semanal padrão se nenhuma agenda for fornecida
+  useEffect(() => {
+    if (initialSchedules.length === 0) {
+      const defaultSchedules = createDefaultWeeklySchedule();
+      setSchedules(defaultSchedules);
+      
+      if (onSave) {
+        onSave(defaultSchedules);
+      }
     }
+  }, [initialSchedules, onSave]);
+
+  // Atualiza agendas quando includeSaturday ou includeSunday mudam
+  useEffect(() => {
+    const weekdayDates = getCurrentAndNextDays(includeSaturday, includeSunday);
+    
+    // Para cada data, verifica se já temos uma agenda
+    const updatedSchedules = weekdayDates.map(date => {
+      const existingSchedule = schedules.find(s => s.date === date);
+      return existingSchedule || {
+        date,
+        timeSlots: createWorkTimeSlots(8, 17, 12)
+      };
+    });
+    
+    setSchedules(updatedSchedules);
+    
+    if (onSave) {
+      onSave(updatedSchedules);
+    }
+  }, [includeSaturday, includeSunday, onSave]);
+
+  const toggleSaturday = () => {
+    setIncludeSaturday(!includeSaturday);
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value;
+  const toggleSunday = () => {
+    setIncludeSunday(!includeSunday);
+  };
+
+  // Função auxiliar para carregar uma agenda específica para uma data
+  const loadScheduleForDate = (date: string) => {
     setSelectedDate(date);
     
     // Verifica se já existe agenda para esta data
     const existingSchedule = schedules.find(s => s.date === date);
     if (existingSchedule) {
-      setCurrentSchedule(existingSchedule);
+      // Cria uma cópia profunda para evitar mutações acidentais
+      setCurrentSchedule(JSON.parse(JSON.stringify(existingSchedule)));
     } else {
-      // Cria uma nova agenda vazia para a data selecionada
+      // Cria uma nova agenda com slots padrão para a data selecionada
       setCurrentSchedule({
         date,
-        timeSlots: []
+        timeSlots: createWorkTimeSlots(8, 17, 12) // Usar configuração padrão para novos dias
       });
     }
+  };
+
+  const saveCurrentSchedule = () => {
+    if (!currentSchedule) return;
+    
+    // Atualiza a agenda atual na lista de agendas
+    const updatedSchedules = schedules.map(schedule => 
+      schedule.date === currentSchedule.date ? currentSchedule : schedule
+    );
+    
+    // Se a data não existia anteriormente, adiciona-a
+    if (!updatedSchedules.some(s => s.date === currentSchedule.date)) {
+      updatedSchedules.push(currentSchedule);
+    }
+    
+    setSchedules(updatedSchedules);
+    
+    // Notifica o componente pai sobre a alteração
+    if (onSave) {
+      onSave(updatedSchedules);
+    }
+  };
+
+  const handleDayClick = (date: string) => {
+    loadScheduleForDate(date);
+    setIsModalOpen(true);
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = e.target.value;
+    loadScheduleForDate(date);
   };
 
   const handleAddTimeSlot = () => {
     if (!currentSchedule) return;
 
+    // Add a default 45-minute work slot
     const newTimeSlot: TimeSlot = {
       id: Date.now().toString(),
       type: 'work',
       startTime: '08:00',
-      endTime: '12:00',
+      endTime: '08:45',
       isActive: true
     };
 
@@ -101,94 +286,119 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
   };
 
   const handleSaveSchedule = () => {
-    if (!currentSchedule) return;
-
-    // Atualiza a agenda atual ou adiciona uma nova
-    const scheduleIndex = schedules.findIndex(s => s.date === currentSchedule.date);
-    let updatedSchedules: DailySchedule[];
-
-    if (scheduleIndex >= 0) {
-      updatedSchedules = [...schedules];
-      updatedSchedules[scheduleIndex] = currentSchedule;
-    } else {
-      updatedSchedules = [...schedules, currentSchedule];
-    }
-
-    setSchedules(updatedSchedules);
-    
-    if (onSave) {
-      onSave(updatedSchedules);
-    }
-
+    saveCurrentSchedule();
     setIsModalOpen(false);
   };
+
+  const handleResetToDefault = () => {
+    if (!currentSchedule) return;
+    
+    // Redefine os horários para o padrão (8h às 17h com almoço ao meio-dia)
+    setCurrentSchedule({
+      ...currentSchedule,
+      timeSlots: createWorkTimeSlots(8, 17, 12)
+    });
+  };
+
+  const handleSelectAllSlots = (isActive: boolean) => {
+    if (!currentSchedule) return;
+    
+    const updatedTimeSlots = currentSchedule.timeSlots.map(slot => ({
+      ...slot,
+      isActive
+    }));
+    
+    setCurrentSchedule({
+      ...currentSchedule,
+      timeSlots: updatedTimeSlots
+    });
+  };
+
+  // Organiza os horários por dia da semana - sempre usando os dias atuais da semana (segunda a sexta)
+  const weekdayDates = getCurrentAndNextDays(includeSaturday, includeSunday);
+  const weekdaySchedules = weekdayDates.map(date => {
+    const existingSchedule = schedules.find(s => s.date === date);
+    return {
+      date,
+      schedule: existingSchedule || { date, timeSlots: [] }
+    };
+  });
 
   return (
     <div className="bg-white p-6 rounded-lg shadow mt-6">
       <div className="flex justify-between items-center mb-6">
         <Title level={3}>Horários de Atendimento</Title>
-        <Button 
-          variant="primary" 
-          onClick={handleOpenModal}
-        >
-          Gerenciar Horários
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={toggleSaturday}
+          >
+            {includeSaturday ? 'Ocultar Sábado' : 'Incluir Sábado'}
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={toggleSunday}
+          >
+            {includeSunday ? 'Ocultar Domingo' : 'Incluir Domingo'}
+          </Button>
+        </div>
       </div>
 
-      {schedules.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {schedules.map(schedule => (
-            <div key={schedule.date} className="border rounded-lg p-4">
-              <h4 className="font-medium text-lg mb-2">
-                {new Date(schedule.date).toLocaleDateString('pt-BR')}
-              </h4>
-              <ul className="space-y-2">
-                {schedule.timeSlots.map(slot => (
-                  <li 
-                    key={slot.id}
-                    className={`${!slot.isActive ? 'text-gray-400' : ''}`}
-                  >
-                    <div className="flex items-center">
-                      <span className={`inline-block w-4 h-4 rounded-full mr-2 ${
-                        slot.type === 'work' ? 'bg-green-500' : 'bg-orange-500'
-                      }`}></span>
-                      <span>
-                        {slot.startTime} - {slot.endTime}
-                        {' '}
-                        <span className="text-sm">
-                          ({slot.type === 'work' ? 'Atendimento' : 'Intervalo'})
-                        </span>
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                variant="secondary"
-                size="sm"
-                className="mt-2"
-                onClick={() => {
-                  setSelectedDate(schedule.date);
-                  setCurrentSchedule(schedule);
-                  setIsModalOpen(true);
-                }}
-              >
-                Editar
-              </Button>
+      {/* Mostra os dias da semana como cards clicáveis */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {weekdaySchedules.map(({ date, schedule }) => {
+          const hasTimeSlots = schedule.timeSlots && schedule.timeSlots.length > 0;
+          // Conta apenas os slots de trabalho ativos (não conta intervalos)
+          const activeTimeSlots = hasTimeSlots ? 
+            schedule.timeSlots.filter(slot => slot.type === 'work' && slot.isActive) : 
+            [];
+          const hasActiveSlots = activeTimeSlots.length > 0;
+          const dateObj = new Date(date);
+          const weekday = weekdayNames[dateObj.getDay()];
+          
+          return (
+            <div 
+              key={date} 
+              className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+                hasActiveSlots ? 'bg-blue-50 border-blue-200' : 
+                hasTimeSlots ? 'bg-gray-100 border-gray-300' : 'bg-gray-50 border-gray-200'
+              }`}
+              onClick={() => handleDayClick(date)}
+            >
+              <h4 className="font-medium text-lg mb-1">{weekday}</h4>
+              <p className="text-sm text-gray-600">
+                {dateObj.toLocaleDateString('pt-BR')}
+              </p>
+              <div className="mt-2 text-sm">
+                {hasActiveSlots ? (
+                  <span className="text-green-600 font-medium">
+                    {activeTimeSlots.length} horário(s) de atendimento
+                  </span>
+                ) : hasTimeSlots ? (
+                  <span className="text-orange-500 font-medium">
+                    Sem horários de atendimento
+                  </span>
+                ) : (
+                  <span className="text-gray-500">
+                    Clique para configurar
+                  </span>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-10 text-gray-500">
-          Nenhum horário configurado. Clique em "Gerenciar Horários" para começar.
-        </div>
-      )}
+          );
+        })}
+      </div>
 
       {/* Modal para edição de horários */}
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
-        title="Configurar Horários"
+        onClose={() => {
+          // Não salvar ao fechar pelo X, apenas fechar
+          setIsModalOpen(false);
+        }}
+        title={`Configurar Horários: ${selectedDate ? formatDateWithWeekday(selectedDate) : ''}`}
         size="large"
       >
         <div className="mb-4">
@@ -204,21 +414,50 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
 
         {currentSchedule && (
           <>
-            <div className="mt-6 mb-4 flex justify-between items-center">
+            <div className="mt-6 mb-4 flex flex-wrap justify-between items-center gap-2">
               <h4 className="font-medium">Horários do dia</h4>
-              <Button 
-                variant="secondary"
-                size="sm"
-                onClick={handleAddTimeSlot}
-              >
-                Adicionar Horário
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleSelectAllSlots(true)}
+                >
+                  Ativar Todos
+                </Button>
+                <Button 
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleSelectAllSlots(false)}
+                >
+                  Desativar Todos
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleResetToDefault}
+                >
+                  Redefinir para Padrão
+                </Button>
+                <Button 
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddTimeSlot}
+                >
+                  Adicionar Horário
+                </Button>
+              </div>
             </div>
             
             {currentSchedule.timeSlots.length > 0 ? (
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {currentSchedule.timeSlots.map(slot => (
-                  <div key={slot.id} className="border rounded p-4 relative">
+                  <div 
+                    key={slot.id} 
+                    className={`border rounded p-4 relative ${
+                      !slot.isActive ? 'bg-gray-50' : 
+                      slot.type === 'break' ? 'bg-yellow-50' : ''
+                    }`}
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div>
                         <Label htmlFor={`type-${slot.id}`}>Tipo</Label>
@@ -284,7 +523,10 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
         <div className="mt-6 flex justify-end space-x-2">
           <Button 
             variant="secondary"
-            onClick={() => setIsModalOpen(false)}
+            onClick={() => {
+              // Apenas fechar o modal ao cancelar, sem salvar
+              setIsModalOpen(false);
+            }}
           >
             Cancelar
           </Button>
