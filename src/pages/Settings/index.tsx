@@ -1,71 +1,49 @@
 import React from 'react';
-import Title from '../../components/ui/Title/Title';
-import Input from '../../components/ui/Form/Input';
-import Label from '../../components/ui/Form/Label';
-import Button from '../../components/ui/Button/Button';
+import Title from '../../components/ui/Title';
+import PersonalDataSettings from '../../components/ui/PersonalDataSettings';
+import CollaboratorManager from '../../components/ui/CollaboratorManager';
+import WorkScheduleManager from '../../components/ui/WorkScheduleManager';
 
 const Settings: React.FC = () => {
-  const [formData, setFormData] = React.useState({
+  const [userData] = React.useState({
     name: 'Dr. Psicólogo',
     email: 'psicologo@clinica.com',
-    workingHours: '09:00 - 18:00',
+    phone: '(11) 99999-9999',
+    specialization: 'Psicologia Clínica'
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handlePersonalDataSave = (data: any) => {
+    console.log('Dados pessoais atualizados:', data);
+    // Implementar lógica para salvar os dados
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Lógica para salvar configurações
-    alert('Configurações salvas com sucesso!');
+  const handleCollaboratorsSave = (collaborators: any[]) => {
+    console.log('Colaboradores atualizados:', collaborators);
+    // Implementar lógica para salvar colaboradores
+  };
+
+  const handleScheduleSave = (schedules: any[]) => {
+    console.log('Horários atualizados:', schedules);
+    // Implementar lógica para salvar horários
   };
 
   return (
-    <>
+    <div className="pb-10">
       <Title level={1}>Configurações</Title>
       
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mt-6 max-w-2xl">
-        <div className="mb-4">
-          <Label htmlFor="name">Nome do Profissional</Label>
-          <Input
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="mb-4">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="mb-6">
-          <Label htmlFor="workingHours">Horário de Atendimento</Label>
-          <Input
-            id="workingHours"
-            name="workingHours"
-            value={formData.workingHours}
-            onChange={handleChange}
-            placeholder="Ex: 09:00 - 18:00"
-          />
-        </div>
-
-        <div className="flex justify-end">
-          <Button type="submit" variant="primary">
-            Salvar Configurações
-          </Button>
-        </div>
-      </form>
-    </>
+      <PersonalDataSettings 
+        initialData={userData}
+        onSave={handlePersonalDataSave}
+      />
+      
+      <CollaboratorManager
+        onSave={handleCollaboratorsSave}
+      />
+      
+      <WorkScheduleManager
+        onSave={handleScheduleSave}
+      />
+    </div>
   );
 };
 
