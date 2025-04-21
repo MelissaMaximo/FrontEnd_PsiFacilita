@@ -16,7 +16,9 @@ const AppRoutes: React.FC = () => {
       <Route path="/login" element={<Login />} />
       
       {/* Rotas com layout */}
-      <Route element={<MainLayout children={undefined} />}>
+      <Route element={<MainLayout children={undefined} sidebarOpen={false} setSidebarOpen={function (): void {
+        throw new Error('Function not implemented.');
+      } } />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/patients" element={<Patients />} />
