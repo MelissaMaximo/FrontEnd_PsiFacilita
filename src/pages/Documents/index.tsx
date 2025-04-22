@@ -1,45 +1,93 @@
 import React from 'react';
 import Title from '../../components/ui/Title/Title';
-import Dropdown from '../../components/ui/Dropdown'; 
+import DocumentCategoryDropdown from '../../components/ui/DocumentCategoryDropdown';
 
 const Documents: React.FC = () => {
-  const documentTypes = [
-    { id: '1', name: 'Avaliação Psicológica', category: 'Avaliações' },
-    { id: '2', name: 'Relatório de Sessão', category: 'Relatórios' },
-    { id: '3', name: 'Anamnese', category: 'Avaliações' },
-    { id: '4', name: 'Termo de Consentimento', category: 'Documentos Legais' },
+  const documentCategories = [
+    {
+      name: 'Administrativos',
+      documents: [
+        { id: 'adm-1', name: 'Formulário de Admissão', route: '/documents/administrativos/adm-1' },
+        { id: 'adm-2', name: 'Formulário de Alta', route: '/documents/administrativos/adm-2' },
+        { id: 'adm-3', name: 'Prontuário', route: '/documents/administrativos/adm-3' },
+      ],
+    },
+    {
+      name: 'Atestados e Declarações',
+      documents: [
+        { id: 'atd-1', name: 'Atestado de Comparecimento', route: '/documents/atestados/atd-1' },
+        { id: 'atd-2', name: 'Atestado Psicológico', route: '/documents/atestados/atd-2' },
+        { id: 'atd-3', name: 'Declaração de Acompanhamento', route: '/documents/atestados/atd-3' },
+      ],
+    },
+    {
+      name: 'Avaliações',
+      documents: [
+        { id: 'ava-1', name: 'Avaliação Psicológica', route: '/documents/avaliacoes/ava-1' },
+        { id: 'ava-2', name: 'Anamnese', route: '/documents/avaliacoes/ava-2' },
+        { id: 'ava-3', name: 'Teste de Personalidade', route: '/documents/avaliacoes/ava-3' },
+      ],
+    },
+    {
+      name: 'Complementares',
+      documents: [
+        { id: 'com-1', name: 'Registro de Sessão', route: '/documents/complementares/com-1' },
+        { id: 'com-2', name: 'Anotações Clínicas', route: '/documents/complementares/com-2' },
+      ],
+    },
+    {
+      name: 'Contratuais e Encaminhamentos',
+      documents: [
+        { id: 'con-1', name: 'Contrato de Prestação de Serviços', route: '/documents/contratuais/con-1' },
+        { id: 'con-2', name: 'Encaminhamento para Especialista', route: '/documents/contratuais/con-2' },
+        { id: 'con-3', name: 'Termo de Compromisso', route: '/documents/contratuais/con-3' },
+      ],
+    },
+    {
+      name: 'Técnicos',
+      documents: [
+        { id: 'tec-1', name: 'Parecer Técnico', route: '/documents/tecnicos/tec-1' },
+        { id: 'tec-2', name: 'Informe Psicológico', route: '/documents/tecnicos/tec-2' },
+        { id: 'tec-3', name: 'Laudo Psicológico', route: '/documents/tecnicos/tec-3' },
+      ],
+    },
   ];
 
-  const handleSelectDocument = (documentId: string) => {
-    console.log('Documento selecionado:', documentId);
-    // Lógica para carregar o documento selecionado
-  };
+  const recentDocuments = [
+    { id: 'ava-1', name: 'Avaliação Psicológica', category: 'Avaliações' },
+    { id: 'con-1', name: 'Contrato de Prestação de Serviços', category: 'Contratuais' },
+    { id: 'atd-2', name: 'Atestado Psicológico', category: 'Atestados' },
+  ];
 
   return (
     <>
       <Title level={1}>Documentos</Title>
       
-      <div className="bg-white p-6 rounded-lg shadow mt-6">
-        <h2 className="text-lg font-medium mb-4">Selecione um Documento</h2>
-        <Dropdown
-          options={documentTypes.map(doc => ({
-            value: doc.id,
-            label: `${doc.name} (${doc.category})`
-          }))}
-          onSelect={handleSelectDocument}
-          placeholder="Selecione um documento..."
-        />
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Seção de Dropdowns */}
+        <div className="md:col-span-2">
+          <div className="bg-white p-6 rounded-lg shadow mt-6">
+            <h2 className="text-lg font-medium mb-4">Modelos de Documentos</h2>
+            <p className="text-gray-600 mb-6">
+              Selecione uma categoria e escolha o modelo de documento que deseja visualizar ou editar.
+            </p>
+            <DocumentCategoryDropdown categories={documentCategories} />
+          </div>
+        </div>
 
-      <div className="mt-8">
-        <h2 className="text-lg font-medium mb-4">Documentos Recentes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {documentTypes.slice(0, 3).map(doc => (
-            <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-              <h3 className="font-medium">{doc.name}</h3>
-              <p className="text-sm text-gray-500">{doc.category}</p>
+        {/* Seção de Documentos Recentes */}
+        <div>
+          <div className="bg-white p-6 rounded-lg shadow mt-6">
+            <h2 className="text-lg font-medium mb-4">Documentos Recentes</h2>
+            <div className="space-y-3">
+              {recentDocuments.map(doc => (
+                <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+                  <h3 className="font-medium">{doc.name}</h3>
+                  <p className="text-sm text-gray-500">{doc.category}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </>
