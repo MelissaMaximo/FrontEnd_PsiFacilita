@@ -34,6 +34,11 @@ const formatTimeString = (hours: number, minutes: number): string => {
   return `${padTimeNumber(hours)}:${padTimeNumber(minutes)}`;
 };
 
+// Função utilitária para criar cópias profundas de objetos
+const deepCopy = <T,>(obj: T): T => {
+  return JSON.parse(JSON.stringify(obj));
+};
+
 // Array com os nomes dos dias da semana em português (na ordem do JavaScript: 0=Domingo, 1=Segunda, etc)
 const weekdayNames = [
   'Segunda-feira', 'Terça-feira', 
@@ -164,8 +169,19 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
       if (onSave) {
         onSave(defaultSchedules);
       }
+    } else {
+      // Se recebermos novas agendas do componente pai, atualizamos o estado local
+      setSchedules(deepCopy(initialSchedules));
+      
+      // Se temos um horário selecionado atualmente, precisamos atualizar esse horário também
+      if (currentSchedule) {
+        const updatedCurrentSchedule = initialSchedules.find(s => s.date === currentSchedule.date);
+        if (updatedCurrentSchedule) {
+          setCurrentSchedule(deepCopy(updatedCurrentSchedule));
+        }
+      }
     }
-  }, [initialSchedules, onSave]);
+  }, [initialSchedules]);
 
   // Atualiza agendas quando includeSaturday ou includeSunday mudam
   useEffect(() => {
@@ -174,18 +190,27 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
     // Para cada data, verifica se já temos uma agenda
     const updatedSchedules = weekdayDates.map(date => {
       const existingSchedule = schedules.find(s => s.date === date);
+      // Preserva a configuração existente, incluindo o status isActive dos slots
       return existingSchedule || {
         date,
         timeSlots: createWorkTimeSlots(8, 17, 12)
       };
     });
     
-    setSchedules(updatedSchedules);
+    // Preserva as agendas existentes que não fazem parte dos dias da semana selecionados
+    // (para garantir que configurações personalizadas de outras datas não sejam perdidas)
+    const nonWeekdaySchedules = schedules.filter(
+      schedule => !weekdayDates.includes(schedule.date)
+    );
+    
+    const finalSchedules = [...updatedSchedules, ...nonWeekdaySchedules];
+    
+    setSchedules(finalSchedules);
     
     if (onSave) {
-      onSave(updatedSchedules);
+      onSave(deepCopy(finalSchedules));
     }
-  }, [includeSaturday, includeSunday, onSave]);
+  }, [includeSaturday, includeSunday]);
 
   const toggleSaturday = () => {
     setIncludeSaturday(!includeSaturday);
@@ -203,34 +228,17 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
     const existingSchedule = schedules.find(s => s.date === date);
     if (existingSchedule) {
       // Cria uma cópia profunda para evitar mutações acidentais
-      setCurrentSchedule(JSON.parse(JSON.stringify(existingSchedule)));
+      const scheduleCopy = deepCopy(existingSchedule);
+      console.log("Carregando horários existentes:", scheduleCopy);
+      setCurrentSchedule(scheduleCopy);
     } else {
       // Cria uma nova agenda com slots padrão para a data selecionada
-      setCurrentSchedule({
+      const newSchedule = {
         date,
         timeSlots: createWorkTimeSlots(8, 17, 12) // Usar configuração padrão para novos dias
-      });
-    }
-  };
-
-  const saveCurrentSchedule = () => {
-    if (!currentSchedule) return;
-    
-    // Atualiza a agenda atual na lista de agendas
-    const updatedSchedules = schedules.map(schedule => 
-      schedule.date === currentSchedule.date ? currentSchedule : schedule
-    );
-    
-    // Se a data não existia anteriormente, adiciona-a
-    if (!updatedSchedules.some(s => s.date === currentSchedule.date)) {
-      updatedSchedules.push(currentSchedule);
-    }
-    
-    setSchedules(updatedSchedules);
-    
-    // Notifica o componente pai sobre a alteração
-    if (onSave) {
-      onSave(updatedSchedules);
+      };
+      console.log("Criando novos horários:", newSchedule);
+      setCurrentSchedule(newSchedule);
     }
   };
 
@@ -265,12 +273,15 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
   const handleTimeSlotChange = (id: string, field: keyof TimeSlot, value: any) => {
     if (!currentSchedule) return;
 
-    const updatedTimeSlots = currentSchedule.timeSlots.map(slot => 
+    // Cria uma cópia profunda do estado atual para evitar problemas de referência
+    const updatedSchedule = deepCopy(currentSchedule);
+    const updatedTimeSlots = updatedSchedule.timeSlots.map(slot => 
       slot.id === id ? { ...slot, [field]: value } : slot
     );
 
+    // Atualiza o estado com a nova cópia que inclui as alterações
     setCurrentSchedule({
-      ...currentSchedule,
+      ...updatedSchedule,
       timeSlots: updatedTimeSlots
     });
   };
@@ -286,7 +297,38 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
   };
 
   const handleSaveSchedule = () => {
-    saveCurrentSchedule();
+    if (!currentSchedule) return;
+    
+    // Garantir que estamos salvando todas as propriedades dos slots corretamente
+    const updatedSchedule = deepCopy(currentSchedule);
+    
+    // Cria uma entrada de log para depuração na console
+    console.log("Salvando agendamento com slots:", updatedSchedule.timeSlots.map(slot => ({
+      id: slot.id,
+      type: slot.type,
+      isActive: slot.isActive
+    })));
+      
+    // Atualiza a agenda atual na lista de agendas
+    const updatedSchedules = schedules.map(schedule => 
+      schedule.date === updatedSchedule.date ? updatedSchedule : schedule
+    );
+    
+    // Se a data não existia anteriormente, adiciona-a
+    if (!updatedSchedules.some(s => s.date === updatedSchedule.date)) {
+      updatedSchedules.push(updatedSchedule);
+    }
+    
+    // Atualiza o estado local com as novas agendas
+    setSchedules(deepCopy(updatedSchedules));
+    
+    // Notifica o componente pai sobre a alteração
+    if (onSave) {
+      // Cria uma cópia completa e envia para o componente pai para garantir que não haja referências compartilhadas
+      onSave(deepCopy(updatedSchedules));
+    }
+    
+    // Fecha o modal
     setIsModalOpen(false);
   };
 

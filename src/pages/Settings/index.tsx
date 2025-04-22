@@ -1,16 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Title from '../../components/ui/Title';
 import PersonalDataSettings from '../../components/ui/PersonalDataSettings';
 import CollaboratorManager from '../../components/ui/CollaboratorManager';
 import WorkScheduleManager from '../../components/ui/WorkScheduleManager';
 
+// Interface para a estrutura de dados de TimeSlot
+interface TimeSlot {
+  id: string;
+  type: 'work' | 'break';
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
+// Interface para a estrutura de dados de DailySchedule
+interface DailySchedule {
+  date: string; // formato YYYY-MM-DD
+  timeSlots: TimeSlot[];
+}
+
 const Settings: React.FC = () => {
-  const [userData] = React.useState({
+  const [userData] = useState({
     name: 'Dr. Psicólogo',
     email: 'psicologo@clinica.com',
     phone: '(11) 99999-9999',
     specialization: 'Psicologia Clínica'
   });
+  
+  // Estado para armazenar os horários de trabalho
+  const [workSchedules, setWorkSchedules] = useState<DailySchedule[]>([]);
 
   const handlePersonalDataSave = (data: any) => {
     console.log('Dados pessoais atualizados:', data);
@@ -22,9 +40,10 @@ const Settings: React.FC = () => {
     // Implementar lógica para salvar colaboradores
   };
 
-  const handleScheduleSave = (schedules: any[]) => {
+  const handleScheduleSave = (schedules: DailySchedule[]) => {
     console.log('Horários atualizados:', schedules);
-    // Implementar lógica para salvar horários
+    // Atualiza o estado com os novos horários
+    setWorkSchedules(JSON.parse(JSON.stringify(schedules)));
   };
 
   return (
@@ -41,6 +60,7 @@ const Settings: React.FC = () => {
       />
       
       <WorkScheduleManager
+        initialSchedules={workSchedules}
         onSave={handleScheduleSave}
       />
     </div>
