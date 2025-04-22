@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import Icon from '../Icon/Icon';
 import Button from '../Button/Button';
@@ -8,7 +8,7 @@ type IconType = 'check' | 'alert-circle' | 'info' | 'x'; // Adicione aqui outros
 
 interface ModalProps {
   isOpen: boolean;
-  message: string;
+  message?: string;
   type?: ModalType;
   onClose: () => void;
   confirmButtonText?: string;
@@ -20,6 +20,8 @@ interface ModalProps {
   fullScreen?: boolean;
   title?: string;
   showCloseButton?: boolean;
+  children?: React.ReactNode;
+  size?: 'small' | 'medium' | 'large';
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -36,7 +38,11 @@ const Modal: React.FC<ModalProps> = ({
   fullScreen = false,
   title,
   showCloseButton = true,
+  children,
+  size = 'medium',
 }) => {
+  const nodeRef = useRef(null);
+  
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : 'auto';
     return () => {
@@ -86,14 +92,27 @@ const Modal: React.FC<ModalProps> = ({
     className,
   ].join(' ');
 
+  const sizeClasses = {
+    small: 'max-w-sm',
+    medium: 'max-w-lg',
+    large: 'max-w-3xl',
+  };
+
   const contentClasses = [
     'bg-white rounded-lg shadow-xl transform transition-all relative',
-    fullScreen ? 'w-full h-full' : 'max-w-lg w-full max-h-[90vh] overflow-y-auto',
+    fullScreen ? 'w-full h-full' : `${sizeClasses[size]} w-full max-h-[90vh] overflow-y-auto`,
   ].join(' ');
 
   return (
-    <CSSTransition in={isOpen} timeout={300} classNames="modal" unmountOnExit>
+    <CSSTransition 
+      in={isOpen} 
+      timeout={300} 
+      classNames="modal" 
+      unmountOnExit
+      nodeRef={nodeRef}
+    >
       <div
+        ref={nodeRef}
         className={modalClasses}
         style={style}
         role="dialog"
@@ -119,48 +138,56 @@ const Modal: React.FC<ModalProps> = ({
           )}
 
           <div className="p-6">
-            <div className="flex flex-col items-center text-center sm:flex-row sm:text-left">
-              <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${getColorClass()} bg-opacity-20 mb-4 sm:mb-0 sm:mr-4`}>
-                <Icon type={getIconType()} size={24} />
-              </div>
+            {(title || message) && (
+              <div className="flex flex-col items-center text-center sm:flex-row sm:text-left">
+                <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${getColorClass()} bg-opacity-20 mb-4 sm:mb-0 sm:mr-4`}>
+                  <Icon type={getIconType()} size={24} />
+                </div>
 
-              <div className="mt-3 flex-1">
-                {title && (
-                  <h3 id="modal-title" className="text-lg leading-6 font-medium text-gray-900">
-                    {title}
-                  </h3>
-                )}
-                <div id="modal-description" className="mt-2">
-                  <p className="text-sm text-gray-500 whitespace-pre-line">
-                    {message}
-                  </p>
+                <div className="mt-3 flex-1">
+                  {title && (
+                    <h3 id="modal-title" className="text-lg leading-6 font-medium text-gray-900">
+                      {title}
+                    </h3>
+                  )}
+                  {message && (
+                    <div id="modal-description" className="mt-2">
+                      <p className="text-sm text-gray-500 whitespace-pre-line">
+                        {message}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+            
+            {children}
 
-            <div className={`mt-6 flex ${cancelButtonText ? 'justify-between' : 'justify-end'}`}>
-              {cancelButtonText && (
+            {(confirmButtonText || cancelButtonText) && (
+              <div className={`mt-6 flex ${cancelButtonText ? 'justify-between' : 'justify-end'}`}>
+                {cancelButtonText && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onCancel?.();
+                      onClose();
+                    }}
+                    className="mr-2"
+                  >
+                    {cancelButtonText}
+                  </Button>
+                )}
                 <Button
-                  variant="outline"
+                  variant={type === 'error' ? 'danger' : 'primary'}
                   onClick={() => {
-                    onCancel?.();
+                    onConfirm?.();
                     onClose();
                   }}
-                  className="mr-2"
                 >
-                  {cancelButtonText}
+                  {confirmButtonText}
                 </Button>
-              )}
-              <Button
-                variant={type === 'error' ? 'danger' : 'primary'}
-                onClick={() => {
-                  onConfirm?.();
-                  onClose();
-                }}
-              >
-                {confirmButtonText}
-              </Button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
