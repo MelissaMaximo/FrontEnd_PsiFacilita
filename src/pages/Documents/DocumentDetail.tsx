@@ -3,14 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Title from '../../components/ui/Title/Title';
 import Button from '../../components/ui/Button/Button';
 
-interface DocumentDetailProps {
-  // Props se necessário
+
+interface DocumentData {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  createdAt: string;
 }
 
-const DocumentDetail: React.FC<DocumentDetailProps> = () => {
+const DocumentDetail: React.FC = () => {
   const { id, category } = useParams<{ id: string; category: string }>();
   const [loading, setLoading] = useState(true);
-  const [documentData, setDocumentData] = useState<any>(null);
+  const [documentData, setDocumentData] = useState<DocumentData | null>(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,9 +27,11 @@ const DocumentDetail: React.FC<DocumentDetailProps> = () => {
         // Simulando uma resposta após 500ms
         setTimeout(() => {
           setDocumentData({
-            id,
+
+            id: id || '',
             title: `Documento ${id}`,
-            category,
+            category: category || '',
+
             content: 'Conteúdo do documento...',
             createdAt: new Date().toISOString(),
           });
@@ -65,14 +73,17 @@ const DocumentDetail: React.FC<DocumentDetailProps> = () => {
             {documentData?.category}
           </span>
           <span className="text-gray-500 text-sm">
-            Criado em: {new Date(documentData?.createdAt).toLocaleDateString()}
+
+            Criado em: {new Date(documentData?.createdAt || '').toLocaleDateString()}
+            
           </span>
         </div>
 
         <div className="border-t pt-4">
           <p className="whitespace-pre-line">{documentData?.content}</p>
 
-          {/* Aqui você pode adicionar um editor de documento ou campos específicos */}
+
+          {/* Espaço para editor de documentos */}
           <div className="mt-8 flex justify-end space-x-3">
             <Button variant="outline">Download</Button>
             <Button variant="primary">Editar</Button>

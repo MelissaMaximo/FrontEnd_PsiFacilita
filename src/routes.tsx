@@ -8,6 +8,8 @@ import Documents from './pages/Documents';
 import DocumentDetail from './pages/Documents/DocumentDetail';
 import Settings from './pages/Settings';
 import MainLayout from './components/layout/MainLayout/MainLayout';
+import { Playground } from './playground/playground';
+
 
 const AppRoutes: React.FC = () => {
   return (
@@ -16,8 +18,10 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       
-      {/* Rotas com layout */}
-      <Route element={<MainLayout children={undefined} />}>
+      {/* Rotas principais com layout */}
+      <Route element={<MainLayout sidebarOpen={false} setSidebarOpen={function (): void {
+        throw new Error('Function not implemented.');
+      } } />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/patients" element={<Patients />} />
@@ -25,6 +29,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/documents/:category/:id" element={<DocumentDetail />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
+
+      {/* Rota do Playground SEM layout do sistema */}
+      <Route path="/playground" element={<Playground />} />
     </Routes>
   );
 };

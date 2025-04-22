@@ -1,68 +1,227 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface DropdownOption {
-  value: string;
+  value: string | number;
   label: string;
 }
 
 interface DropdownProps {
   options: DropdownOption[];
-  onSelect: (value: string) => void;
+  value?: string | number | (string | number)[];
+  onChange: (value: string | number | (string | number)[]) => void;
   placeholder?: string;
+  disabled?: boolean;
+  multiple?: boolean;
+  searchable?: boolean;
   className?: string;
+  style?: React.CSSProperties;
+  closeOnSelect?: boolean;
+  noOptionsMessage?: string;
 }
 
-const Dropdown: React.FC<DropdownProps> = ({ 
-  options, 
-  onSelect, 
+const Dropdown: React.FC<DropdownProps> = ({
+  options = [],
+  value,
+  onChange,
   placeholder = 'Selecione...',
-  className = ''
+  disabled = false,
+  multiple = false,
+  searchable = false,
+  className = '',
+  style,
+  closeOnSelect = true,
+  noOptionsMessage = 'Sem opções disponíveis',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<DropdownOption | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleSelect = (option: DropdownOption) => {
-    setSelectedOption(option);
-    onSelect(option.value);
-    setIsOpen(false);
+  const filteredOptions = options.filter(option =>
+    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleToggleDropdown = () => {
+    if (!disabled) {
+      setIsOpen(!isOpen);
+      setSearchTerm('');
+      setHighlightedIndex(-1);
+    }
+  };
+
+  const handleOptionSelect = (selectedValue: string | number) => {
+    if (multiple) {
+      const currentValues = Array.isArray(value) ? value : [];
+      const newValue = currentValues.includes(selectedValue)
+        ? currentValues.filter(v => v !== selectedValue)
+        : [...currentValues, selectedValue];
+      onChange(newValue);
+    } else {
+      onChange(selectedValue);
+      if (closeOnSelect) {
+        setIsOpen(false);
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        handleToggleDropdown();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'Escape':
+        setIsOpen(false);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          Math.min(prev + 1, filteredOptions.length - 1)
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => Math.max(prev - 1, 0));
+        break;
+      case 'Enter':
+        if (highlightedIndex >= 0) {
+          handleOptionSelect(filteredOptions[highlightedIndex].value);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleClickOutside = (e: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      setIsOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const getDisplayValue = () => {
+    if (!value || (multiple && (value as Array<string | number>).length === 0)) {
+      return placeholder;
+    }
+
+    if (multiple) {
+      const selectedOptions = options.filter(option => 
+        (value as Array<string | number>).includes(option.value)
+      );
+      return selectedOptions.map(option => option.label).join(', ');
+    }
+
+    const selectedOption = options.find(option => option.value === value);
+    return selectedOption ? selectedOption.label : placeholder;
+  };
+
+  const isOptionSelected = (optionValue: string | number) => {
+    if (multiple) {
+      return Array.isArray(value) && value.includes(optionValue);
+    }
+    return value === optionValue;
   };
 
   return (
-    <div className={`relative ${className}`}>
-      <button
-        type="button"
-        className="w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 sm:text-sm"
-        onClick={() => setIsOpen(!isOpen)}
+    <div
+      ref={dropdownRef}
+      className={`relative ${className}`}
+      style={style}
+      role="combobox"
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+      aria-disabled={disabled}
+    >
+      <div
+        className={`flex items-center justify-between p-2 border rounded cursor-pointer ${
+          disabled ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-blue-500'
+        } ${isOpen ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-300'}`}
+        onClick={handleToggleDropdown}
+        onKeyDown={handleKeyDown}
+        tabIndex={disabled ? -1 : 0}
       >
-        <span className="block truncate">
-          {selectedOption ? selectedOption.label : placeholder}
+        <span className={`truncate ${!value ? 'text-gray-400' : ''}`}>
+          {getDisplayValue()}
         </span>
-        <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </span>
-      </button>
+        <svg
+          className={`w-5 h-5 ml-2 transition-transform ${
+            isOpen ? 'transform rotate-180' : ''
+          }`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
 
       {isOpen && (
-        <ul className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-          {options.map((option) => (
-            <li
-              key={option.value}
-              className="text-gray-900 cursor-default select-none relative py-2 pl-3 pr-9 hover:bg-green-100"
-              onClick={() => handleSelect(option)}
-            >
-              <span className="block truncate">{option.label}</span>
-              {selectedOption?.value === option.value && (
-                <span className="text-green-600 absolute inset-y-0 right-0 flex items-center pr-4">
-                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
+          {searchable && (
+            <div className="p-2 border-b">
+              <input
+                type="text"
+                className="w-full p-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </div>
+          )}
+
+          <ul
+            className="py-1 overflow-auto max-h-60"
+            role="listbox"
+          >
+            {filteredOptions.length === 0 ? (
+              <li className="px-4 py-2 text-gray-500">{noOptionsMessage}</li>
+            ) : (
+              filteredOptions.map((option, index) => (
+                <li
+                  key={option.value}
+                  className={`px-4 py-2 cursor-pointer ${
+                    highlightedIndex === index ? 'bg-blue-100' : 'hover:bg-gray-100'
+                  } ${
+                    isOptionSelected(option.value)
+                      ? 'bg-blue-50 text-blue-700'
+                      : ''
+                  }`}
+                  onClick={() => handleOptionSelect(option.value)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  role="option"
+                  aria-selected={isOptionSelected(option.value)}
+                >
+                  {multiple && (
+                    <input
+                      type="checkbox"
+                      checked={isOptionSelected(option.value)}
+                      readOnly
+                      className="mr-2"
+                    />
+                  )}
+                  {option.label}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       )}
     </div>
   );

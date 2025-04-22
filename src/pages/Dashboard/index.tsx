@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
   ];
 
   const chartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: ['Jan', 'Feb', 'Mar', 'Apr'],
     datasets: [
       {
         label: 'Pacientes Ativos',
@@ -46,10 +46,11 @@ const Dashboard: React.FC = () => {
           <Card
             key={index}
             title={card.title}
-            value={card.value}
-            description={card.description}
             className="h-full"
-          />
+          >
+            <p className="text-3xl font-semibold text-gray-900">{card.value}</p>
+            <p className="text-sm text-gray-500 mt-1">{card.description}</p>
+          </Card>
         ))}
       </div>
 

@@ -1,7 +1,7 @@
 import { useAuth } from '../../components/hooks/useAuth';
 import Button from '../../components/ui/Button'; 
-import Input from '../../components/ui/Form/Input'; 
-import Label from '../../components/ui/Form/Label'; 
+import Input from '../../components/ui/Form/Input';
+import Label from '../../components/ui/Form/Label';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,18 +9,26 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
-    const success = await login(email, password);
-    if (!success) {
-      setError('Email ou senha inválidos');
-    } else {
-      navigate('/dashboard'); // Adicionado uso do navigate
+    try {
+      const success = await login(email, password);
+      if (!success) {
+        setError('Email ou senha inválidos');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch {
+      setError('Ocorreu um erro durante o login');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,6 +61,7 @@ const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
+                disabled={isLoading}
               />
             </div>
 
@@ -66,11 +75,18 @@ const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                disabled={isLoading}
               />
             </div>
 
             <div>
-              <Button type="submit" variant="primary" fullWidth>
+              <Button 
+                type="submit" 
+                variant="primary" 
+                fullWidth
+                loading={isLoading}
+                disabled={isLoading}
+              >
                 Entrar
               </Button>
             </div>
