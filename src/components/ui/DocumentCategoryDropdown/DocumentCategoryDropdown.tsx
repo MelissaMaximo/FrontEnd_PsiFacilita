@@ -38,7 +38,8 @@ const DocumentCategoryDropdown: React.FC<DocumentCategoryDropdownProps> = ({
         <div key={category.name} className="border rounded-lg overflow-hidden">
           <button
             onClick={() => toggleCategory(category.name)}
-            className="w-full bg-green-700 text-white py-3 px-4 flex justify-between items-center hover:bg-green-800 transition-colors"
+            className="w-full text-white py-3 px-4 flex justify-between items-center transition-colors hover:brightness-90"
+            style={{ backgroundColor: '#245b36' }}
           >
             <span className="font-medium">{category.name}</span>
             <svg

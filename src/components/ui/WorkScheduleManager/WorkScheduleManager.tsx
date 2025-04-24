@@ -442,6 +442,7 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
         }}
         title={`Configurar Horários: ${selectedDate ? formatDateWithWeekday(selectedDate) : ''}`}
         size="large"
+        confirmButtonText="" // Desativar botão OK padrão
       >
         <div className="mb-4">
           <Label htmlFor="date">Data</Label>
