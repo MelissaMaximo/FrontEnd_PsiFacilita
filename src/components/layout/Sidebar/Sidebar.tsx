@@ -18,7 +18,7 @@ const sidebarItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   return (
-    <div className="w-full h-full text-white p-4" style={{ backgroundColor: '#245b36' }}>
+    <div className="w-full h-full text-white p-4 bg-primary">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-xl font-bold">PsiFacilita</h1>
         {onClose && (

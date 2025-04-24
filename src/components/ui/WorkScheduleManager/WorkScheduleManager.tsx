@@ -372,14 +372,14 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
         <Title level={3}>Horários de Atendimento</Title>
         <div className="flex gap-2">
           <Button 
-            variant="secondary" 
+            variant="primary" 
             size="sm" 
             onClick={toggleSaturday}
           >
             {includeSaturday ? 'Ocultar Sábado' : 'Incluir Sábado'}
           </Button>
           <Button 
-            variant="secondary" 
+            variant="primary" 
             size="sm" 
             onClick={toggleSunday}
           >
@@ -461,28 +461,28 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
               <h4 className="font-medium">Horários do dia</h4>
               <div className="flex flex-wrap gap-2">
                 <Button 
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   onClick={() => handleSelectAllSlots(true)}
                 >
                   Ativar Todos
                 </Button>
                 <Button 
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   onClick={() => handleSelectAllSlots(false)}
                 >
                   Desativar Todos
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   onClick={handleResetToDefault}
                 >
                   Redefinir para Padrão
                 </Button>
                 <Button 
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   onClick={handleAddTimeSlot}
                 >
@@ -544,14 +544,16 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
                         </label>
                       </div>
                     </div>
-                    <button
+                    <Button
                       onClick={() => handleRemoveTimeSlot(slot.id)}
-                      className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                      variant="danger"
+                      size="sm"
+                      className="absolute top-2 right-2"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 111.414 1.414L11.414 10l4.293 4.293a1 1 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -565,7 +567,7 @@ const WorkScheduleManager: React.FC<WorkScheduleManagerProps> = ({
 
         <div className="mt-6 flex justify-end space-x-2">
           <Button 
-            variant="secondary"
+            variant="outline"
             onClick={() => {
               // Apenas fechar o modal ao cancelar, sem salvar
               setIsModalOpen(false);
